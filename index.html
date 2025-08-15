@@ -3,202 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>External Page Loader</title>
+    <title>Auto Redirect to Notion</title>
     <style>
         body {
             margin: 0;
-            padding: 10px;
+            padding: 20px;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: #f8f9fa;
-        }
-        
-        .container {
-            height: calc(100vh - 20px);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            position: relative;
-        }
-        
-        .header {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        
-        .url-display {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 10px;
-            word-break: break-all;
-        }
-        
-        .controls {
-            display: flex;
-            gap: 10px;
+            justify-content: center;
             align-items: center;
         }
         
-        .btn {
-            padding: 8px 16px;
+        .redirect-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 400px;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .manual-btn {
+            background: white;
+            color: #667eea;
             border: none;
-            border-radius: 4px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
-            font-size: 14px;
+            margin-top: 20px;
             text-decoration: none;
             display: inline-block;
         }
         
-        .btn-primary {
-            background: #1f93ff;
+        .cancel-btn {
+            background: transparent;
             color: white;
-        }
-        
-        .btn-secondary {
-            background: #6b7280;
-            color: white;
-        }
-        
-        .quick-action-btn {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #10b981;
-            color: white;
-            border: none;
-            border-radius: 50px;
-            padding: 16px 24px;
-            font-size: 16px;
-            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-            transition: all 0.3s ease;
-            z-index: 1000;
-            display: none;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-        }
-        
-        .quick-action-btn:hover {
-            background: #059669;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.5);
-        }
-        
-        .quick-action-btn.visible {
-            display: flex;
-        }
-        
-        .one-click-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-        }
-        
-        .one-click-btn {
-            background: white;
-            color: #667eea;
-            border: none;
-            border-radius: 8px;
-            padding: 12px 24px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin-top: 12px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-        }
-        
-        .one-click-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-        
-        .iframe-container {
-            flex: 1;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        
-        .iframe-container iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-        
-        .error-message {
-            background: #fee;
-            color: #c53030;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        
-        .loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 200px;
-            color: #666;
+            margin-left: 10px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- One-Click Action Header -->
-        <div class="one-click-header" id="oneClickHeader" style="display: none;">
-            <h2 style="margin: 0 0 8px 0; font-size: 20px;">📋 Contact Page</h2>
-            <p style="margin: 0; opacity: 0.9; font-size: 14px;" id="quickSiteName">Ready to open</p>
-            <a href="#" id="oneClickBtn" class="one-click-btn" target="_blank">
-                🚀 Open Page
-            </a>
+    <div class="redirect-card">
+        <div class="spinner" id="spinner"></div>
+        <h2 id="status">Opening Notion Page...</h2>
+        <p id="countdown">Redirecting in <span id="timer">3</span> seconds</p>
+        <div id="manual-controls" style="display: none;">
+            <a href="#" id="manualBtn" class="manual-btn" target="_blank">Open Notion Page</a>
+            <button class="cancel-btn" onclick="cancelRedirect()">Stay Here</button>
         </div>
-
-        <div class="header">
-            <div class="url-display" id="urlDisplay">
-                Loading contact information...
-            </div>
-            <div class="controls">
-                <button class="btn btn-primary" onclick="refreshFrame()" id="refreshBtn" disabled>
-                    Refresh
-                </button>
-                <a class="btn btn-secondary" id="openNewTab" href="#" target="_blank" style="display: none;">
-                    Open in New Tab
-                </a>
-            </div>
-        </div>
-        
-        <div class="iframe-container" id="iframeContainer">
-            <div class="loading">
-                Initializing dashboard app...
-            </div>
-        </div>
-
-        <!-- Floating Action Button -->
-        <a href="#" id="floatingBtn" class="quick-action-btn" target="_blank">
-            🚀 <span id="floatingBtnText">Open Page</span>
-        </a>
     </div>
 
     <script>
         let currentUrl = null;
         let contact = null;
+        let countdownTimer = 3;
+        let redirectTimeout;
+        let countdownInterval;
 
-        // Initialize the app
         window.onload = function() {
-            console.log('Dashboard app initializing...');
-            
             // Listen for messages from Chatwoot
             window.addEventListener("message", function (event) {
                 if (!isJSONValid(event.data)) {
@@ -206,32 +95,15 @@
                 }
 
                 const eventData = JSON.parse(event.data);
-                console.log('Received event from Chatwoot:', eventData);
                 
-                // Handle appContext event (this is what Chatwoot sends)
                 if (eventData.event === 'appContext' && eventData.data) {
-                    console.log('Processing appContext data:', eventData.data);
-                    
-                    // Handle contact data
                     if (eventData.data.contact) {
                         contact = eventData.data.contact;
                         handleContactData(contact);
                     }
-                    
-                    // Handle conversation data if needed
-                    if (eventData.data.conversation) {
-                        console.log('Conversation data:', eventData.data.conversation);
-                    }
-                }
-                
-                // Handle direct contact data (fallback)
-                else if (eventData.contact) {
-                    contact = eventData.contact;
-                    handleContactData(contact);
                 }
             });
 
-            // Request initial data from Chatwoot
             requestChatwootData();
         };
 
@@ -245,7 +117,6 @@
         }
 
         function requestChatwootData() {
-            // Send a message to request current context
             if (window.parent) {
                 window.parent.postMessage(JSON.stringify({
                     type: 'request_context'
@@ -255,273 +126,63 @@
 
         function handleContactData(contactData) {
             contact = contactData;
-            console.log('Processing contact data:', contact);
-            
-            // Extract URL from custom field
-            // Replace 'notion_url' with your actual custom field key
             const customFieldKey = 'notion'; // Change this to match your custom field
             
             if (contact && contact.custom_attributes && contact.custom_attributes[customFieldKey]) {
                 currentUrl = contact.custom_attributes[customFieldKey];
-                loadExternalPage(currentUrl);
+                startRedirect(currentUrl);
             } else if (contact && contact.additional_attributes && contact.additional_attributes[customFieldKey]) {
-                // Try additional_attributes as fallback
                 currentUrl = contact.additional_attributes[customFieldKey];
-                loadExternalPage(currentUrl);
+                startRedirect(currentUrl);
             } else {
-                showError(`No URL found in contact custom fields. Please ensure the custom field "${customFieldKey}" is set for this contact.`);
-                console.log('Available contact fields:', Object.keys(contact.custom_attributes || {}));
+                showError();
             }
         }
 
-        function loadExternalPage(url) {
-            if (!url) {
-                showError('No URL provided');
-                return;
-            }
-
-            // Validate URL
-            if (!isValidUrl(url)) {
-                showError('Invalid URL format');
-                return;
-            }
-
-            // Update UI
-            document.getElementById('urlDisplay').textContent = `Ready: ${url}`;
-            document.getElementById('refreshBtn').disabled = false;
-            document.getElementById('openNewTab').href = url;
-            document.getElementById('openNewTab').style.display = 'inline-block';
-
-            // Set up one-click buttons
-            setupOneClickButtons(url);
-
-            // Check if site allows embedding by trying to load it
-            tryEmbedding(url);
-        }
-
-        function setupOneClickButtons(url) {
-            const hostname = new URL(url).hostname;
+        function startRedirect(url) {
+            document.getElementById('manualBtn').href = url;
             
-            // Set up the header one-click button
-            const oneClickHeader = document.getElementById('oneClickHeader');
-            const oneClickBtn = document.getElementById('oneClickBtn');
-            const quickSiteName = document.getElementById('quickSiteName');
-            
-            oneClickHeader.style.display = 'block';
-            oneClickBtn.href = url;
-            quickSiteName.textContent = hostname;
-            
-            // Set up floating action button
-            const floatingBtn = document.getElementById('floatingBtn');
-            const floatingBtnText = document.getElementById('floatingBtnText');
-            
-            floatingBtn.href = url;
-            floatingBtn.classList.add('visible');
-            
-            // Customize button text based on domain
-            if (hostname.includes('notion')) {
-                floatingBtnText.textContent = 'Open Notion';
-            } else if (hostname.includes('google')) {
-                floatingBtnText.textContent = 'Open Google';
-            } else {
-                floatingBtnText.textContent = 'Open Page';
-            }
-        }
-
-        function tryEmbedding(url) {
-            const container = document.getElementById('iframeContainer');
-            
-            // Check if URL is from a known problematic domain
-            if (isKnownRestrictedDomain(url)) {
-                showPreview(url);
-                return;
-            }
-            
-            // Try to embed in iframe for other domains
-            const iframe = document.createElement('iframe');
-            iframe.src = url;
-            iframe.style.width = '100%';
-            iframe.style.height = '100%';
-            iframe.style.border = 'none';
-            iframe.style.display = 'none'; // Hide initially
-            
-            let embedTimeout;
-            let embedSuccess = false;
-
-            // Set up success handler
-            iframe.onload = function() {
-                embedSuccess = true;
-                clearTimeout(embedTimeout);
-                iframe.style.display = 'block';
-                document.getElementById('urlDisplay').textContent = `Loaded: ${url}`;
-            };
-
-            // Set timeout to detect embedding failures
-            embedTimeout = setTimeout(() => {
-                if (!embedSuccess) {
-                    // Embedding failed, show preview instead
-                    iframe.remove();
-                    showPreview(url);
-                }
-            }, 5000);
-
-            // Add iframe to container
-            container.innerHTML = '';
-            container.appendChild(iframe);
-        }
-
-        function isKnownRestrictedDomain(url) {
-            const restrictedDomains = [
-                'notion.so',
-                'notion.com',
-                'notion.site',  // Added this for Notion public pages
-                'google.com',
-                'docs.google.com',
-                'drive.google.com',
-                'sheets.google.com',
-                'slides.google.com',
-                'youtube.com',
-                'facebook.com',
-                'twitter.com',
-                'x.com',
-                'linkedin.com',
-                'github.com',
-                'gitlab.com',
-                'stackoverflow.com',
-                'reddit.com'
-            ];
-            
-            try {
-                const hostname = new URL(url).hostname.toLowerCase();
-                return restrictedDomains.some(domain => 
-                    hostname === domain || hostname.endsWith('.' + domain)
-                );
-            } catch (e) {
-                return false;
-            }
-        }
-
-        function showPreview(url) {
-            const container = document.getElementById('iframeContainer');
-            const hostname = new URL(url).hostname;
-            
-            // Get a favicon for better UX
-            const faviconUrl = `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`;
-            
-            container.innerHTML = `
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 20px;">
-                    <div onclick="window.open('${url}', '_blank')" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 32px; max-width: 420px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); cursor: pointer; transition: all 0.2s ease; user-select: none;" 
-                         onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 12px -2px rgba(0, 0, 0, 0.15)'"
-                         onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px -1px rgba(0, 0, 0, 0.1)'">
-                        <img src="${faviconUrl}" alt="${hostname}" style="width: 48px; height: 48px; margin-bottom: 16px; border-radius: 8px;" onerror="this.style.display='none'">
-                        <h3 style="margin: 0 0 12px 0; color: #1e293b; font-size: 18px; font-weight: 600;">Click to Open</h3>
-                        <p style="margin: 0 0 8px 0; color: #64748b; font-size: 14px; font-weight: 500;">
-                            ${hostname}
-                        </p>
-                        <p style="margin: 0 0 24px 0; color: #94a3b8; font-size: 13px; line-height: 1.4;">
-                            Tap anywhere in this card to open the page in a new tab.
-                        </p>
-                        <div style="background: #1f93ff; color: white; padding: 10px 20px; border-radius: 6px; font-size: 14px; display: inline-block;">
-                            Open Page →
-                        </div>
-                        <div style="margin-top: 12px;">
-                            <button onclick="event.stopPropagation(); checkAndLoadPage('${url}')" style="background: transparent; border: 1px solid #cbd5e1; color: #64748b; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer;">
-                                Try Embed
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Quick actions if it's a Notion page -->
-                    ${hostname.includes('notion') ? `
-                    <div style="margin-top: 20px; padding: 16px; background: #f8fafc; border-radius: 8px; font-size: 13px; color: #64748b; max-width: 420px;">
-                        <strong style="color: #374151;">💡 Notion Tip:</strong> For better integration, consider using Notion's API to display page content directly, or ensure the page is publicly shared.
-                    </div>
-                    ` : ''}
-                </div>
-            `;
-            
-            document.getElementById('urlDisplay').textContent = `Preview: ${hostname} (click to open)`;
-        }
-
-        function checkAndLoadPage(url) {
-            document.getElementById('urlDisplay').textContent = `Checking: ${url}`;
-            tryEmbedding(url);
-        }
-
-        function refreshFrame() {
-            if (currentUrl) {
-                loadExternalPage(currentUrl);
-            } else {
-                // Try to get contact data again
-                requestChatwootData();
-            }
-        }
-
-        function isValidUrl(string) {
-            try {
-                new URL(string);
-                return true;
-            } catch (_) {
-                return false;
-            }
-        }
-
-        function showError(message) {
-            const container = document.getElementById('iframeContainer');
-            container.innerHTML = `
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 20px;">
-                    <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 24px; max-width: 400px;">
-                        <div style="color: #dc2626; font-size: 48px; margin-bottom: 16px;">⚠️</div>
-                        <h3 style="margin: 0 0 12px 0; color: #991b1b; font-size: 16px;">Configuration Needed</h3>
-                        <p style="margin: 0 0 16px 0; color: #7f1d1d; font-size: 14px; line-height: 1.4;">
-                            ${message}
-                        </p>
-                        <button onclick="requestChatwootData()" style="background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-size: 14px; cursor: pointer;">
-                            Retry
-                        </button>
-                    </div>
-                </div>
-            `;
-            document.getElementById('urlDisplay').textContent = 'Error: No URL configured';
-            
-            // Hide one-click buttons on error
-            document.getElementById('oneClickHeader').style.display = 'none';
-            document.getElementById('floatingBtn').classList.remove('visible');
-        }
-
-        // Debug function to help with setup
-        function debugContactData() {
-            console.log('=== Debug Info ===');
-            if (contact) {
-                console.log('✅ Contact object found:', contact);
-                console.log('📋 Contact ID:', contact.id);
-                console.log('👤 Contact name:', contact.name);
-                console.log('📧 Contact email:', contact.email);
-                console.log('🏷️ Custom attributes:', contact.custom_attributes);
-                console.log('➕ Additional attributes:', contact.additional_attributes);
+            // Start countdown
+            countdownInterval = setInterval(() => {
+                countdownTimer--;
+                document.getElementById('timer').textContent = countdownTimer;
                 
-                if (contact.custom_attributes) {
-                    console.log('📝 Available custom field keys:', Object.keys(contact.custom_attributes));
-                } else {
-                    console.log('❌ No custom_attributes found');
+                if (countdownTimer <= 0) {
+                    clearInterval(countdownInterval);
+                    window.open(url, '_blank');
+                    showCompleted();
                 }
-                
-                if (contact.additional_attributes) {
-                    console.log('📝 Available additional field keys:', Object.keys(contact.additional_attributes));
-                } else {
-                    console.log('❌ No additional_attributes found');
-                }
-            } else {
-                console.log('❌ No contact data available yet');
-                console.log('💡 Try switching to a different contact or conversation');
-            }
-            
-            console.log('🔗 Current URL:', currentUrl);
-            console.log('⚙️ Looking for custom field key:', 'notion');
+            }, 1000);
+
+            // Auto redirect after 3 seconds
+            redirectTimeout = setTimeout(() => {
+                window.open(url, '_blank');
+                showCompleted();
+            }, 3000);
         }
 
-        // Expose debug function globally for testing
-        window.debugContactData = debugContactData;
+        function showCompleted() {
+            document.getElementById('spinner').style.display = 'none';
+            document.getElementById('status').textContent = 'Page Opened!';
+            document.getElementById('countdown').style.display = 'none';
+            document.getElementById('manual-controls').style.display = 'block';
+        }
+
+        function showError() {
+            document.getElementById('spinner').style.display = 'none';
+            document.getElementById('status').textContent = 'No Notion URL Found';
+            document.getElementById('countdown').innerHTML = 'Please configure the custom field "notion_url" for this contact.';
+            document.getElementById('manual-controls').style.display = 'none';
+        }
+
+        function cancelRedirect() {
+            clearTimeout(redirectTimeout);
+            clearInterval(countdownInterval);
+            document.getElementById('spinner').style.display = 'none';
+            document.getElementById('status').textContent = 'Redirect Cancelled';
+            document.getElementById('countdown').style.display = 'none';
+            document.getElementById('manual-controls').style.display = 'block';
+        }
     </script>
 </body>
 </html>
