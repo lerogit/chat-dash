@@ -73,19 +73,16 @@
     <div class="redirect-card">
         <div class="spinner" id="spinner"></div>
         <h2 id="status">Opening Notion Page...</h2>
-        <p id="countdown">Redirecting in <span id="timer">3</span> seconds</p>
+        <p id="message">Opening your page now</p>
         <div id="manual-controls" style="display: none;">
             <a href="#" id="manualBtn" class="manual-btn" target="_blank">Open Notion Page</a>
-            <button class="cancel-btn" onclick="cancelRedirect()">Stay Here</button>
+            <button class="cancel-btn" onclick="showManualControls()">Open Manually</button>
         </div>
     </div>
 
     <script>
         let currentUrl = null;
         let contact = null;
-        let countdownTimer = 3;
-        let redirectTimeout;
-        let countdownInterval;
 
         window.onload = function() {
             // Listen for messages from Chatwoot
@@ -126,61 +123,42 @@
 
         function handleContactData(contactData) {
             contact = contactData;
-            const customFieldKey = 'notion'; // Change this to match your custom field
+            const customFieldKey = 'notion_url'; // Change this to match your custom field
             
             if (contact && contact.custom_attributes && contact.custom_attributes[customFieldKey]) {
                 currentUrl = contact.custom_attributes[customFieldKey];
-                startRedirect(currentUrl);
+                openPageImmediately(currentUrl);
             } else if (contact && contact.additional_attributes && contact.additional_attributes[customFieldKey]) {
                 currentUrl = contact.additional_attributes[customFieldKey];
-                startRedirect(currentUrl);
+                openPageImmediately(currentUrl);
             } else {
                 showError();
             }
         }
 
-        function startRedirect(url) {
+        function openPageImmediately(url) {
             document.getElementById('manualBtn').href = url;
             
-            // Start countdown
-            countdownInterval = setInterval(() => {
-                countdownTimer--;
-                document.getElementById('timer').textContent = countdownTimer;
-                
-                if (countdownTimer <= 0) {
-                    clearInterval(countdownInterval);
-                    window.open(url, '_blank');
-                    showCompleted();
-                }
-            }, 1000);
-
-            // Auto redirect after 3 seconds
-            redirectTimeout = setTimeout(() => {
-                window.open(url, '_blank');
-                showCompleted();
-            }, 3000);
+            // Open immediately
+            window.open(url, '_blank');
+            showCompleted();
         }
 
         function showCompleted() {
             document.getElementById('spinner').style.display = 'none';
             document.getElementById('status').textContent = 'Page Opened!';
-            document.getElementById('countdown').style.display = 'none';
+            document.getElementById('message').textContent = 'Your Notion page has been opened in a new tab.';
             document.getElementById('manual-controls').style.display = 'block';
         }
 
         function showError() {
             document.getElementById('spinner').style.display = 'none';
             document.getElementById('status').textContent = 'No Notion URL Found';
-            document.getElementById('countdown').innerHTML = 'Please configure the custom field "notion_url" for this contact.';
+            document.getElementById('message').innerHTML = 'Please configure the custom field "notion_url" for this contact.';
             document.getElementById('manual-controls').style.display = 'none';
         }
 
-        function cancelRedirect() {
-            clearTimeout(redirectTimeout);
-            clearInterval(countdownInterval);
-            document.getElementById('spinner').style.display = 'none';
-            document.getElementById('status').textContent = 'Redirect Cancelled';
-            document.getElementById('countdown').style.display = 'none';
+        function showManualControls() {
             document.getElementById('manual-controls').style.display = 'block';
         }
     </script>
