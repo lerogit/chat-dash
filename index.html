@@ -137,7 +137,7 @@
                 
                 // Extract URL from custom field
                 // Replace 'notion_url' with your actual custom field key
-                const customFieldKey = 'notion_url'; // Change this to match your custom field
+                const customFieldKey = 'notion'; // Change this to match your custom field
                 
                 if (contact && contact.custom_attributes && contact.custom_attributes[customFieldKey]) {
                     currentUrl = contact.custom_attributes[customFieldKey];
@@ -170,31 +170,85 @@
             }
 
             // Update UI
-            document.getElementById('urlDisplay').textContent = `Loading: ${url}`;
+            document.getElementById('urlDisplay').textContent = `Ready: ${url}`;
             document.getElementById('refreshBtn').disabled = false;
             document.getElementById('openNewTab').href = url;
             document.getElementById('openNewTab').style.display = 'inline-block';
 
-            // Create iframe
+            // Check if site allows embedding by trying to load it
+            tryEmbedding(url);
+        }
+
+        function tryEmbedding(url) {
+            const container = document.getElementById('iframeContainer');
+            
+            // First, try to embed in iframe
             const iframe = document.createElement('iframe');
             iframe.src = url;
             iframe.style.width = '100%';
             iframe.style.height = '100%';
             iframe.style.border = 'none';
+            iframe.style.display = 'none'; // Hide initially
             
-            // Handle iframe load events
+            let embedTimeout;
+            let embedSuccess = false;
+
+            // Set up success handler
             iframe.onload = function() {
+                embedSuccess = true;
+                clearTimeout(embedTimeout);
+                iframe.style.display = 'block';
                 document.getElementById('urlDisplay').textContent = `Loaded: ${url}`;
             };
-            
-            iframe.onerror = function() {
-                showError('Failed to load the external page. The site may not allow embedding.');
-            };
 
-            // Replace container content
-            const container = document.getElementById('iframeContainer');
+            // Set timeout to detect embedding failures
+            embedTimeout = setTimeout(() => {
+                if (!embedSuccess) {
+                    // Embedding failed, show preview instead
+                    showPreview(url);
+                }
+            }, 3000);
+
+            // Add iframe to container
             container.innerHTML = '';
             container.appendChild(iframe);
+
+            // Also listen for console errors (CSP violations)
+            const originalConsoleError = console.error;
+            console.error = function(...args) {
+                const message = args.join(' ');
+                if (message.includes('frame-ancestors') || message.includes('Content Security Policy')) {
+                    clearTimeout(embedTimeout);
+                    showPreview(url);
+                }
+                originalConsoleError.apply(console, args);
+            };
+        }
+
+        function showPreview(url) {
+            const container = document.getElementById('iframeContainer');
+            const hostname = new URL(url).hostname;
+            
+            container.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 40px;">
+                    <div style="background: #f0f9ff; border: 2px solid #0ea5e9; border-radius: 12px; padding: 30px; max-width: 400px;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">🔗</div>
+                        <h3 style="margin: 0 0 15px 0; color: #0f172a;">External Page Ready</h3>
+                        <p style="margin: 0 0 20px 0; color: #64748b; font-size: 14px;">
+                            This page (${hostname}) cannot be embedded due to security policies, but you can open it directly.
+                        </p>
+                        <a href="${url}" target="_blank" class="btn btn-primary" style="font-size: 16px; padding: 12px 24px; text-decoration: none; display: inline-block; margin-bottom: 15px;">
+                            📖 Open ${hostname}
+                        </a>
+                        <br>
+                        <button onclick="tryEmbedding('${url}')" class="btn btn-secondary" style="font-size: 14px; padding: 8px 16px;">
+                            🔄 Try Embedding Again
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('urlDisplay').textContent = `Preview: ${url} (cannot embed)`;
         }
 
         function refreshFrame() {
