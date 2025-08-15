@@ -16,6 +16,7 @@
             height: calc(100vh - 20px);
             display: flex;
             flex-direction: column;
+            position: relative;
         }
         
         .header {
@@ -59,6 +60,69 @@
             color: white;
         }
         
+        .quick-action-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 16px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        
+        .quick-action-btn:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.5);
+        }
+        
+        .quick-action-btn.visible {
+            display: flex;
+        }
+        
+        .one-click-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        
+        .one-click-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-top: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+        
+        .one-click-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
         .iframe-container {
             flex: 1;
             background: white;
@@ -92,6 +156,15 @@
 </head>
 <body>
     <div class="container">
+        <!-- One-Click Action Header -->
+        <div class="one-click-header" id="oneClickHeader" style="display: none;">
+            <h2 style="margin: 0 0 8px 0; font-size: 20px;">📋 Contact Page</h2>
+            <p style="margin: 0; opacity: 0.9; font-size: 14px;" id="quickSiteName">Ready to open</p>
+            <a href="#" id="oneClickBtn" class="one-click-btn" target="_blank">
+                🚀 Open Page
+            </a>
+        </div>
+
         <div class="header">
             <div class="url-display" id="urlDisplay">
                 Loading contact information...
@@ -111,6 +184,11 @@
                 Initializing dashboard app...
             </div>
         </div>
+
+        <!-- Floating Action Button -->
+        <a href="#" id="floatingBtn" class="quick-action-btn" target="_blank">
+            🚀 <span id="floatingBtnText">Open Page</span>
+        </a>
     </div>
 
     <script>
@@ -214,8 +292,40 @@
             document.getElementById('openNewTab').href = url;
             document.getElementById('openNewTab').style.display = 'inline-block';
 
+            // Set up one-click buttons
+            setupOneClickButtons(url);
+
             // Check if site allows embedding by trying to load it
             tryEmbedding(url);
+        }
+
+        function setupOneClickButtons(url) {
+            const hostname = new URL(url).hostname;
+            
+            // Set up the header one-click button
+            const oneClickHeader = document.getElementById('oneClickHeader');
+            const oneClickBtn = document.getElementById('oneClickBtn');
+            const quickSiteName = document.getElementById('quickSiteName');
+            
+            oneClickHeader.style.display = 'block';
+            oneClickBtn.href = url;
+            quickSiteName.textContent = hostname;
+            
+            // Set up floating action button
+            const floatingBtn = document.getElementById('floatingBtn');
+            const floatingBtnText = document.getElementById('floatingBtnText');
+            
+            floatingBtn.href = url;
+            floatingBtn.classList.add('visible');
+            
+            // Customize button text based on domain
+            if (hostname.includes('notion')) {
+                floatingBtnText.textContent = 'Open Notion';
+            } else if (hostname.includes('google')) {
+                floatingBtnText.textContent = 'Open Google';
+            } else {
+                floatingBtnText.textContent = 'Open Page';
+            }
         }
 
         function tryEmbedding(url) {
@@ -373,6 +483,10 @@
                 </div>
             `;
             document.getElementById('urlDisplay').textContent = 'Error: No URL configured';
+            
+            // Hide one-click buttons on error
+            document.getElementById('oneClickHeader').style.display = 'none';
+            document.getElementById('floatingBtn').classList.remove('visible');
         }
 
         // Debug function to help with setup
