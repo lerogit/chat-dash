@@ -130,15 +130,26 @@
                 const eventData = JSON.parse(event.data);
                 console.log('Received event from Chatwoot:', eventData);
                 
-                // Handle contact data
-                if (eventData.contact) {
-                    contact = eventData.contact;
-                    handleContactData(contact);
+                // Handle appContext event (this is what Chatwoot sends)
+                if (eventData.event === 'appContext' && eventData.data) {
+                    console.log('Processing appContext data:', eventData.data);
+                    
+                    // Handle contact data
+                    if (eventData.data.contact) {
+                        contact = eventData.data.contact;
+                        handleContactData(contact);
+                    }
+                    
+                    // Handle conversation data if needed
+                    if (eventData.data.conversation) {
+                        console.log('Conversation data:', eventData.data.conversation);
+                    }
                 }
                 
-                // Handle conversation data if needed
-                if (eventData.conversation) {
-                    console.log('Conversation data:', eventData.conversation);
+                // Handle direct contact data (fallback)
+                else if (eventData.contact) {
+                    contact = eventData.contact;
+                    handleContactData(contact);
                 }
             });
 
@@ -170,7 +181,7 @@
             
             // Extract URL from custom field
             // Replace 'notion_url' with your actual custom field key
-            const customFieldKey = 'notion'; // Change this to match your custom field
+            const customFieldKey = 'notion_url'; // Change this to match your custom field
             
             if (contact && contact.custom_attributes && contact.custom_attributes[customFieldKey]) {
                 currentUrl = contact.custom_attributes[customFieldKey];
@@ -362,15 +373,33 @@
 
         // Debug function to help with setup
         function debugContactData() {
+            console.log('=== Debug Info ===');
             if (contact) {
-                console.log('=== Contact Debug Info ===');
-                console.log('Full contact object:', contact);
-                console.log('Custom attributes:', contact.custom_attributes);
-                console.log('Additional attributes:', contact.additional_attributes);
-                console.log('Available custom field keys:', contact.custom_attributes ? Object.keys(contact.custom_attributes) : 'None');
+                console.log('✅ Contact object found:', contact);
+                console.log('📋 Contact ID:', contact.id);
+                console.log('👤 Contact name:', contact.name);
+                console.log('📧 Contact email:', contact.email);
+                console.log('🏷️ Custom attributes:', contact.custom_attributes);
+                console.log('➕ Additional attributes:', contact.additional_attributes);
+                
+                if (contact.custom_attributes) {
+                    console.log('📝 Available custom field keys:', Object.keys(contact.custom_attributes));
+                } else {
+                    console.log('❌ No custom_attributes found');
+                }
+                
+                if (contact.additional_attributes) {
+                    console.log('📝 Available additional field keys:', Object.keys(contact.additional_attributes));
+                } else {
+                    console.log('❌ No additional_attributes found');
+                }
             } else {
-                console.log('No contact data available yet');
+                console.log('❌ No contact data available yet');
+                console.log('💡 Try switching to a different contact or conversation');
             }
+            
+            console.log('🔗 Current URL:', currentUrl);
+            console.log('⚙️ Looking for custom field key:', 'notion');
         }
 
         // Expose debug function globally for testing
