@@ -123,7 +123,7 @@
 
         function handleContactData(contactData) {
             contact = contactData;
-            const customFieldKey = 'notion_url'; // Change this to match your custom field
+            const customFieldKey = 'notion'; // Change this to match your custom field
             
             if (contact && contact.custom_attributes && contact.custom_attributes[customFieldKey]) {
                 currentUrl = contact.custom_attributes[customFieldKey];
