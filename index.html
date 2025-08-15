@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auto Redirect to Notion</title>
+    <title>Redirecionamento Automático para Notion</title>
     <style>
         body {
             margin: 0;
@@ -72,11 +72,11 @@
 <body>
     <div class="redirect-card">
         <div class="spinner" id="spinner"></div>
-        <h2 id="status">Opening Notion Page...</h2>
-        <p id="message">Opening your page now</p>
+        <h2 id="status">Abrindo página do Notion...</h2>
+        <p id="message">Abrindo sua página agora</p>
         <div id="manual-controls" style="display: none;">
-            <a href="#" id="manualBtn" class="manual-btn" target="_blank">Open Notion Page</a>
-            <button class="cancel-btn" onclick="showManualControls()">Open Manually</button>
+            <a href="#" id="manualBtn" class="manual-btn" target="_blank">Abrir Página do Notion</a>
+            <button class="cancel-btn" onclick="showManualControls()">Abrir Manualmente</button>
         </div>
     </div>
 
@@ -123,7 +123,7 @@
 
         function handleContactData(contactData) {
             contact = contactData;
-            const customFieldKey = 'notion'; // Change this to match your custom field
+            const customFieldKey = 'notion'; // Changed from 'notion_url' to 'notion'
             
             if (contact && contact.custom_attributes && contact.custom_attributes[customFieldKey]) {
                 currentUrl = contact.custom_attributes[customFieldKey];
@@ -146,15 +146,15 @@
 
         function showCompleted() {
             document.getElementById('spinner').style.display = 'none';
-            document.getElementById('status').textContent = 'Page Opened!';
-            document.getElementById('message').textContent = 'Your Notion page has been opened in a new tab.';
+            document.getElementById('status').textContent = 'Página Aberta!';
+            document.getElementById('message').textContent = 'Sua página do Notion foi aberta em uma nova aba.';
             document.getElementById('manual-controls').style.display = 'block';
         }
 
         function showError() {
             document.getElementById('spinner').style.display = 'none';
-            document.getElementById('status').textContent = 'No Notion URL Found';
-            document.getElementById('message').innerHTML = 'Please configure the custom field "notion_url" for this contact.';
+            document.getElementById('status').textContent = 'URL do Notion Não Encontrada';
+            document.getElementById('message').innerHTML = 'Por favor, configure o campo personalizado "notion" para este contato.';
             document.getElementById('manual-controls').style.display = 'none';
         }
 
