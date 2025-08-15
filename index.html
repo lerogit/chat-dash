@@ -117,44 +117,72 @@
         let currentUrl = null;
         let contact = null;
 
-        // Initialize the Chatwoot SDK
+        // Initialize the app
         window.onload = function() {
-            // Check if Chatwoot SDK is available
-            if (typeof window.chatwootSDK !== 'undefined') {
-                initializeChatwoot();
-            } else {
-                // Fallback for development/testing
-                console.log('Chatwoot SDK not available, using test mode');
-                loadTestData();
-            }
+            console.log('Dashboard app initializing...');
+            
+            // Listen for messages from Chatwoot
+            window.addEventListener("message", function (event) {
+                if (!isJSONValid(event.data)) {
+                    return;
+                }
+
+                const eventData = JSON.parse(event.data);
+                console.log('Received event from Chatwoot:', eventData);
+                
+                // Handle contact data
+                if (eventData.contact) {
+                    contact = eventData.contact;
+                    handleContactData(contact);
+                }
+                
+                // Handle conversation data if needed
+                if (eventData.conversation) {
+                    console.log('Conversation data:', eventData.conversation);
+                }
+            });
+
+            // Request initial data from Chatwoot
+            requestChatwootData();
         };
 
-        function initializeChatwoot() {
-            // Get current contact information
-            window.chatwootSDK.getContact().then(contactData => {
-                contact = contactData;
-                console.log('Contact data:', contact);
-                
-                // Extract URL from custom field
-                // Replace 'notion_url' with your actual custom field key
-                const customFieldKey = 'notion'; // Change this to match your custom field
-                
-                if (contact && contact.custom_attributes && contact.custom_attributes[customFieldKey]) {
-                    currentUrl = contact.custom_attributes[customFieldKey];
-                    loadExternalPage(currentUrl);
-                } else {
-                    showError('No URL found in contact custom fields. Please ensure the custom field "' + customFieldKey + '" is set.');
-                }
-            }).catch(error => {
-                console.error('Error getting contact:', error);
-                showError('Failed to load contact information.');
-            });
+        function isJSONValid(str) {
+            try {
+                JSON.parse(str);
+                return true;
+            } catch (e) {
+                return false;
+            }
         }
 
-        function loadTestData() {
-            // Test data for development
-            currentUrl = 'https://www.notion.so';
-            loadExternalPage(currentUrl);
+        function requestChatwootData() {
+            // Send a message to request current context
+            if (window.parent) {
+                window.parent.postMessage(JSON.stringify({
+                    type: 'request_context'
+                }), '*');
+            }
+        }
+
+        function handleContactData(contactData) {
+            contact = contactData;
+            console.log('Processing contact data:', contact);
+            
+            // Extract URL from custom field
+            // Replace 'notion_url' with your actual custom field key
+            const customFieldKey = 'notion'; // Change this to match your custom field
+            
+            if (contact && contact.custom_attributes && contact.custom_attributes[customFieldKey]) {
+                currentUrl = contact.custom_attributes[customFieldKey];
+                loadExternalPage(currentUrl);
+            } else if (contact && contact.additional_attributes && contact.additional_attributes[customFieldKey]) {
+                // Try additional_attributes as fallback
+                currentUrl = contact.additional_attributes[customFieldKey];
+                loadExternalPage(currentUrl);
+            } else {
+                showError(`No URL found in contact custom fields. Please ensure the custom field "${customFieldKey}" is set for this contact.`);
+                console.log('Available contact fields:', Object.keys(contact.custom_attributes || {}));
+            }
         }
 
         function loadExternalPage(url) {
@@ -182,7 +210,13 @@
         function tryEmbedding(url) {
             const container = document.getElementById('iframeContainer');
             
-            // First, try to embed in iframe
+            // Check if URL is from a known problematic domain
+            if (isKnownRestrictedDomain(url)) {
+                showPreview(url);
+                return;
+            }
+            
+            // Try to embed in iframe for other domains
             const iframe = document.createElement('iframe');
             iframe.src = url;
             iframe.style.width = '100%';
@@ -205,55 +239,96 @@
             embedTimeout = setTimeout(() => {
                 if (!embedSuccess) {
                     // Embedding failed, show preview instead
+                    iframe.remove();
                     showPreview(url);
                 }
-            }, 3000);
+            }, 5000);
 
             // Add iframe to container
             container.innerHTML = '';
             container.appendChild(iframe);
+        }
 
-            // Also listen for console errors (CSP violations)
-            const originalConsoleError = console.error;
-            console.error = function(...args) {
-                const message = args.join(' ');
-                if (message.includes('frame-ancestors') || message.includes('Content Security Policy')) {
-                    clearTimeout(embedTimeout);
-                    showPreview(url);
-                }
-                originalConsoleError.apply(console, args);
-            };
+        function isKnownRestrictedDomain(url) {
+            const restrictedDomains = [
+                'notion.so',
+                'notion.com',
+                'google.com',
+                'docs.google.com',
+                'drive.google.com',
+                'sheets.google.com',
+                'slides.google.com',
+                'youtube.com',
+                'facebook.com',
+                'twitter.com',
+                'x.com',
+                'linkedin.com',
+                'github.com',
+                'gitlab.com',
+                'stackoverflow.com',
+                'reddit.com'
+            ];
+            
+            try {
+                const hostname = new URL(url).hostname.toLowerCase();
+                return restrictedDomains.some(domain => 
+                    hostname === domain || hostname.endsWith('.' + domain)
+                );
+            } catch (e) {
+                return false;
+            }
         }
 
         function showPreview(url) {
             const container = document.getElementById('iframeContainer');
             const hostname = new URL(url).hostname;
             
+            // Get a favicon for better UX
+            const faviconUrl = `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`;
+            
             container.innerHTML = `
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 40px;">
-                    <div style="background: #f0f9ff; border: 2px solid #0ea5e9; border-radius: 12px; padding: 30px; max-width: 400px;">
-                        <div style="font-size: 48px; margin-bottom: 20px;">🔗</div>
-                        <h3 style="margin: 0 0 15px 0; color: #0f172a;">External Page Ready</h3>
-                        <p style="margin: 0 0 20px 0; color: #64748b; font-size: 14px;">
-                            This page (${hostname}) cannot be embedded due to security policies, but you can open it directly.
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 20px;">
+                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 32px; max-width: 420px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                        <img src="${faviconUrl}" alt="${hostname}" style="width: 48px; height: 48px; margin-bottom: 16px; border-radius: 8px;" onerror="this.style.display='none'">
+                        <h3 style="margin: 0 0 12px 0; color: #1e293b; font-size: 18px; font-weight: 600;">External Page</h3>
+                        <p style="margin: 0 0 8px 0; color: #64748b; font-size: 14px; font-weight: 500;">
+                            ${hostname}
                         </p>
-                        <a href="${url}" target="_blank" class="btn btn-primary" style="font-size: 16px; padding: 12px 24px; text-decoration: none; display: inline-block; margin-bottom: 15px;">
-                            📖 Open ${hostname}
+                        <p style="margin: 0 0 24px 0; color: #94a3b8; font-size: 13px; line-height: 1.4;">
+                            This page cannot be embedded due to security restrictions, but you can open it in a new tab.
+                        </p>
+                        <a href="${url}" target="_blank" class="btn btn-primary" style="font-size: 14px; padding: 10px 20px; text-decoration: none; display: inline-block; margin-bottom: 12px; background: #1f93ff; border-radius: 6px;">
+                            Open Page →
                         </a>
                         <br>
-                        <button onclick="tryEmbedding('${url}')" class="btn btn-secondary" style="font-size: 14px; padding: 8px 16px;">
-                            🔄 Try Embedding Again
+                        <button onclick="checkAndLoadPage('${url}')" style="background: transparent; border: 1px solid #cbd5e1; color: #64748b; padding: 6px 12px; border-radius: 4px; font-size: 12px; cursor: pointer;">
+                            Try Again
                         </button>
                     </div>
+                    
+                    <!-- Quick actions if it's a Notion page -->
+                    ${hostname.includes('notion') ? `
+                    <div style="margin-top: 20px; padding: 16px; background: #f8fafc; border-radius: 8px; font-size: 13px; color: #64748b; max-width: 420px;">
+                        <strong style="color: #374151;">💡 Notion Tip:</strong> For better integration, consider using Notion's API to display page content directly, or ensure the page is publicly shared.
+                    </div>
+                    ` : ''}
                 </div>
             `;
             
-            document.getElementById('urlDisplay').textContent = `Preview: ${url} (cannot embed)`;
+            document.getElementById('urlDisplay').textContent = `Preview: ${hostname} (restricted)`;
+        }
+
+        function checkAndLoadPage(url) {
+            document.getElementById('urlDisplay').textContent = `Checking: ${url}`;
+            tryEmbedding(url);
         }
 
         function refreshFrame() {
             if (currentUrl) {
                 loadExternalPage(currentUrl);
+            } else {
+                // Try to get contact data again
+                requestChatwootData();
             }
         }
 
@@ -268,17 +343,38 @@
 
         function showError(message) {
             const container = document.getElementById('iframeContainer');
-            container.innerHTML = `<div class="error-message">${message}</div>`;
-            document.getElementById('urlDisplay').textContent = 'Error loading page';
+            container.innerHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; padding: 20px;">
+                    <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 24px; max-width: 400px;">
+                        <div style="color: #dc2626; font-size: 48px; margin-bottom: 16px;">⚠️</div>
+                        <h3 style="margin: 0 0 12px 0; color: #991b1b; font-size: 16px;">Configuration Needed</h3>
+                        <p style="margin: 0 0 16px 0; color: #7f1d1d; font-size: 14px; line-height: 1.4;">
+                            ${message}
+                        </p>
+                        <button onclick="requestChatwootData()" style="background: #dc2626; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-size: 14px; cursor: pointer;">
+                            Retry
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('urlDisplay').textContent = 'Error: No URL configured';
         }
 
-        // Listen for contact changes in Chatwoot
-        if (typeof window.chatwootSDK !== 'undefined') {
-            window.chatwootSDK.onContactChange = function(newContact) {
-                contact = newContact;
-                initializeChatwoot(); // Reload with new contact
-            };
+        // Debug function to help with setup
+        function debugContactData() {
+            if (contact) {
+                console.log('=== Contact Debug Info ===');
+                console.log('Full contact object:', contact);
+                console.log('Custom attributes:', contact.custom_attributes);
+                console.log('Additional attributes:', contact.additional_attributes);
+                console.log('Available custom field keys:', contact.custom_attributes ? Object.keys(contact.custom_attributes) : 'None');
+            } else {
+                console.log('No contact data available yet');
+            }
         }
+
+        // Expose debug function globally for testing
+        window.debugContactData = debugContactData;
     </script>
 </body>
 </html>
